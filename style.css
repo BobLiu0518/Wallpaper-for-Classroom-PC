@@ -1,0 +1,71 @@
+* {
+    margin: 0px;
+    padding: 0px;
+}
+@font-face {
+    font-family: 'FZHTJW'; 
+    src: url('resource/FZHTJW.TTF') format('truetype');
+}
+@font-face {
+    font-family: 'AvenueT';
+    src: url('resource/AvenueT.ttf') format('truetype');
+}
+body {
+    width: 100%;
+    height: 100%;
+    overflow-y: hidden;
+    background: url('resource/Wallpaper.jpg') no-repeat left 50%;
+}
+p {
+    color: ghostwhite;
+    font-family: "AvenueT", "FZHTJW";
+}
+#divouter {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+}
+#divleft {
+    width: 30%;
+    height: 100%;
+    float: left;
+}
+#divright {
+    width: 30%;
+    height: 100%;
+    float: left;
+}
+#divmiddle {
+    width: 40%;
+    height: 100%;
+    margin-top: 8px;
+    float: left;
+}
+#clock {
+    font-size: 88px;
+    line-height: 96px;
+    text-align: center;
+}
+#subject {
+    font-size: 48px;
+    line-height: 32px;
+    text-align: center;
+}
+#dutytitle {
+    padding-top: 16px;
+    padding-left: 24px;
+    font-size: 64px;
+    text-align: left;
+}
+#duty {
+    padding-left: 24px;
+    font-size: 32px;
+    line-height: 36px;
+    text-align: left;
+}
+#schedule {
+    padding-left: 24px;
+    font-size: 48px;
+    line-height: 56px;
+    text-align: left;
+}
