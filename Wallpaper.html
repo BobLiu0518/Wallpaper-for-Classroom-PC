@@ -8,15 +8,20 @@
     <body>
         <div id="divouter">
             <div id="divleft">
-                <p id="dutytitle">值日生:</p>
-                <p id="duty">学生造反啦<br />没人做值日啦</p>
-            <p id="schedule"><br />自修</p>
+                <p class="normalFont" id="dutytitle">值日生:</p>
+                <p class="normalFont" id="duty">JavaScript 执行失败<br />请检查 config.js 中是否有语法错误</p>
             </div>
             <div id="divmiddle">
-                <p id="clock">11:45<small><small>:14</small></small></p>
-                <p id="subject">下一节 自修 12:34</p>
+                <p class="digitalFont" id="clock">11:45<small><small>:14</small></small></p>
+                <p class="digitalFont" id="subject">下一节 自修 12:34</p>
+                <marquee class="normalFont" id="announcement" scrollamount="12"></marquee>
+                <p class="digitalFont" id="countDown"></p>
+                <p class="digitalFont" id="countUp"></p>
+                </p>
             </div>
-            <div id="divright"></div>
+            <div id="divright">
+                <p class="normalFont" id="schedule"><br /></p>
+            </div>
             <script type="text/javascript" src="core.js"></script>
         </div>
     </body>

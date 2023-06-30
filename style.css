@@ -1,6 +1,10 @@
+/* 这里是 Wallpaper-for-Classroom-PC 项目的网页样式代码 */
+/* 根据设备屏幕分辨率的不同，本项目的显示效果可能会有区别 */
+/* 如有需要可随意修改其中的内容，但建议修改前做好备份 */
+
 * {
     margin: 0px;
-    padding: 0px;
+    padding: 3px;
 }
 @font-face {
     font-family: 'FZHTJW'; 
@@ -10,45 +14,65 @@
     font-family: 'AvenueT';
     src: url('resource/AvenueT.ttf') format('truetype');
 }
+@font-face {
+    font-family: 'MiSans';
+    src: url('resource/MiSans-Demibold.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'Segment7';
+    src: url('resource/Segment7Standard.otf') format('opentype');
+}
 body {
     width: 100%;
     height: 100%;
-    overflow-y: hidden;
-    background: url('resource/Wallpaper.jpg') no-repeat left 50%;
+    overflow: hidden;
+    background: url('resource/Wallpaper.jpg') repeat left 50%;
 }
-p {
+p, marquee {
     color: ghostwhite;
-    font-family: "AvenueT", "FZHTJW";
+    text-shadow: 2px -2px 0px black, 2px 2px 0px black, -2px -2px 0px black, -2px 2px 0px black, 2px 0px 0px black, 0px 2px 0px black, -2px 0px 0px black, 0px -2px 0px black;
+}
+.digitalFont {
+    font-family: "Segment7", "MiSans";
+}
+.pixelFont {
+    font-family: "FZXS16", "MiSans";
+}
+.normalFont {
+    font-family: "AvenueT", "MiSans";
 }
 #divouter {
-    width: 100%;
-    height: 100%;
+    width: 100vw;
+    height: 90%;
     position: absolute;
 }
 #divleft {
-    width: 30%;
+    width: 36vw;
     height: 100%;
+    padding: 0px;
     float: left;
 }
 #divright {
-    width: 30%;
+    width: 36vw;
     height: 100%;
+    padding: 0px;
     float: left;
 }
 #divmiddle {
-    width: 40%;
+    width: 28vw;
     height: 100%;
-    margin-top: 8px;
+    padding: 0px;
     float: left;
 }
 #clock {
-    font-size: 88px;
-    line-height: 96px;
+    font-size: 100px;
+    line-height: 100px;
+    padding-top: 8px;
     text-align: center;
 }
 #subject {
     font-size: 48px;
-    line-height: 32px;
+    line-height: 48px;
     text-align: center;
 }
 #dutytitle {
@@ -59,13 +83,44 @@ p {
 }
 #duty {
     padding-left: 24px;
-    font-size: 32px;
-    line-height: 36px;
+    font-size: 47px;
+    line-height: 56px;
     text-align: left;
 }
 #schedule {
-    padding-left: 24px;
+    padding-top: 32px;
+    padding-right: 24px;
+    font-size: 56px;
+    line-height: 60px;
+    text-align: right;
+}
+.scheduleSeparator {
+    width: 100%;
+    padding: 16px;
+}
+.emoji {
+    width: 52px;
+}
+#currentClass {
+    padding-top: 32px;
+    font-size: 76px;
+    line-height: 84px;
+    text-align: right;
+}
+#announcement {
+    font-size: 32px;
+    line-height: 50px;
+}
+#countDown, #countUp {
+    font-size: 30px;
+    text-align: center;
+}
+#countDown {
+    padding-top: 132px;
+}
+#countUp {
+    padding-top: 24px;
+}
+.countDownLarge {
     font-size: 48px;
-    line-height: 56px;
-    text-align: left;
 }
