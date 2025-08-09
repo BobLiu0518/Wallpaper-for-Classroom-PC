@@ -3,14 +3,13 @@
 // *不建议*无开发基础的人员修改本文件内容
 
 // prefixZero - 前导零
-// 为 num 添加前导零，使其位数达到 n 位
 function prefixZero(num, n){
     return (Array(n).join(0) + num).slice(-n);
 }
 
 // getWeekParity - 获取单双周
-function getWeekParity(){
-    var d = new Date();
+function getWeekParity(date = new Date()){
+    var d = date;
     var f = new Date(d.getFullYear(), 0, 1);
     var w = Math.ceil((parseInt((d - f) / (24 * 60 * 60 * 1000)) + 1 + f.getDay()) / 7);
     return revWeek ? w % 2 : (w + 1) % 2;
@@ -36,80 +35,131 @@ function updateTime(){
 
 // updateSubject - 更新科目
 function updateSubject(d){
-    var subjectsToday = subjectList[getWeekParity()][getDay(d)];
+    const subjectsToday = subjectList[getWeekParity()][getDay(d)];
+    const now = d.valueOf();
 
-    if(subjectsToday.length == 0){
-        // 无课
+    if (!subjectsToday || subjectsToday.length === 0) {
         document.getElementById("subject").innerHTML = promptEmptySchedule;
-    }else{
-        // 还有课
-        var nextClass = 0;
-        var currentClass = 0;
+        return;
+    }
 
-        // 遍历寻找这一节和下一节
-        subjectsToday.forEach((subject, index) => {
-            if(subject === null){
-                return; // continue
-            }
+    let currentClassIndex = -1;
+    let nextClassIndex = -1;
 
-            // 课程时间
-            classTime = new Date();
-            classTime.setHours((subject[0] / 100));
-            classTime.setMinutes(subject[0] % 100);
+    for (let i = subjectsToday.length - 1; i >= 0; i--) {
+        const subject = subjectsToday[i];
+        if (subject === null) continue;
 
-            // 已经过了上课时间+延迟
-            
-            if(d.valueOf() >= classTime.valueOf() + promptUpdateDelay * 60 * 1000){
-                nextClass = index + 1;
-            }
-            // 已经过了下课时间
-            if(d.valueOf() >= classTime.valueOf() + (subject[2] ? subject[2] : defaultClassDuration) * 60 * 1000){
-                currentClass = index + 1;
-            }
-        });
+        const classStartTime = new Date();
+        classStartTime.setHours(parseInt(subject[0] / 100));
+        classStartTime.setMinutes(subject[0] % 100);
+        classStartTime.setSeconds(0, 0);
 
-        while(subjectsToday[nextClass] === null){
-            nextClass ++;
-        }
-        while(subjectsToday[currentClass] === null){
-            currentClass ++;
-        }
-        if(nextClass > subjectsToday.length - 1 || currentClass > subjectsToday.length - 1){
-            // 课上完了
-            document.getElementById("subject").innerHTML = promptAfterSchool;
-            updateSchedule(subjectsToday.length - 1);
-        }else{
-            // 课没上完
-            document.getElementById("subject").innerHTML =
-                "下一节 " + subjectsToday[nextClass][1] + " " +
-                "<b>" + prefixZero(parseInt(subjectsToday[nextClass][0] / 100), 2) + ":" + prefixZero(subjectsToday[nextClass][0] % 100, 2) +"</b>";
-            updateSchedule(currentClass);
+        if (now >= classStartTime.valueOf()) {
+            currentClassIndex = i;
+            break; 
         }
     }
-    return;
+
+    for (let i = 0; i < subjectsToday.length; i++) {
+        const subject = subjectsToday[i];
+        if (subject === null) continue;
+
+        const classStartTime = new Date();
+        classStartTime.setHours(parseInt(subject[0] / 100));
+        classStartTime.setMinutes(subject[0] % 100);
+        classStartTime.setSeconds(0, 0);
+        
+        if (classStartTime.valueOf() - (promptUpdateDelay * 60 * 1000) > now) {
+            nextClassIndex = i;
+            break; 
+        }
+    }
+    
+    let lastClass = null;
+    let lastClassIndex = -1;
+    for(let i = subjectsToday.length - 1; i >= 0; i--) {
+        if(subjectsToday[i] !== null) {
+            lastClass = subjectsToday[i];
+            lastClassIndex = i;
+            break;
+        }
+    }
+    
+    if (lastClass !== null) {
+        const lastClassEndTime = new Date();
+        lastClassEndTime.setHours(parseInt(lastClass[0] / 100));
+        lastClassEndTime.setMinutes(lastClass[0] % 100);
+        const duration = lastClass[2] ? lastClass[2] : defaultClassDuration;
+        lastClassEndTime.setMinutes(lastClassEndTime.getMinutes() + duration);
+
+        if (now >= lastClassEndTime.valueOf()) {
+            document.getElementById("subject").innerHTML = promptAfterSchool;
+            updateSchedule(lastClassIndex);
+            return;
+        }
+    }
+
+    if (nextClassIndex !== -1) {
+        const nextSubject = subjectsToday[nextClassIndex];
+        document.getElementById("subject").innerHTML =
+            "下一节 " + nextSubject[1] + " " +
+            "<b>" + prefixZero(parseInt(nextSubject[0] / 100), 2) + ":" + prefixZero(nextSubject[0] % 100, 2) + "</b>";
+    } else {
+        document.getElementById("subject").innerHTML = promptAfterSchool;
+    }
+
+    updateSchedule(currentClassIndex);
 }
 
 // updateSchedule - 更新课表
 function updateSchedule(currentClass){
     var items = document.getElementById('schedule').children;
-    if(window.CLASS != currentClass){
-        // 需要更新
+    if(window.CLASS !== currentClass){
         window.CLASS = currentClass;
-        var index = 0;
+        var classIndexCounter = -1;
         for(let element of items){
-            if(element.className == 'scheduleSeparator'){
-                index ++;
-                continue;
-            }else if(index == currentClass){
-                element.children[1].id = 'currentClass';
-            }else if(index != currentClass){
-                element.children[1].id = '';
+            if(element.className.includes('scheduleItem')){
+                classIndexCounter++;
+                if (classIndexCounter === currentClass) {
+                    element.id = 'currentClass';
+                } else {
+                    element.id = '';
+                }
             }
-            index ++;
         }
     }
-
     return;
+}
+
+// initTomorrowSchedule - 初始化明日课表
+function initTomorrowSchedule() {
+    const tomorrowDate = new Date();
+    tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+
+    const tomorrowDay = tomorrowDate.getDay();
+    const tomorrowWeekParity = getWeekParity(tomorrowDate);
+
+    const subjectsTomorrow = subjectList[tomorrowWeekParity][tomorrowDay];
+
+    const container = document.getElementById("tomorrow-schedule");
+    container.innerHTML = "";
+
+    if (!subjectsTomorrow || subjectsTomorrow.length === 0) {
+        container.innerHTML = "<div class='scheduleItem'><span>明天没有课哦</span></div>";
+        return;
+    }
+    
+    let scheduleHTML = "";
+    subjectsTomorrow.forEach((element) => {
+        if (element === null) {
+            scheduleHTML += "<div class='scheduleSeparator'></div>";
+        } else {
+            scheduleHTML += `<div class='scheduleItem'><span>${element[1]}</span></div>`;
+        }
+    });
+    
+    container.innerHTML = scheduleHTML;
 }
 
 // init - 初始化
@@ -118,61 +168,75 @@ function init(){
     window.DATE = d.getDate();
     window.MINUTE = d.getMinutes();
     window.CLASS = -1;
+    
     document.getElementById("schedule").innerHTML = "";
+    document.getElementById("tomorrow-schedule").innerHTML = "";
 
-    // 设置课程表
     if(subjectListConsistent){
         subjectList[1] = subjectList[0];
     }
-    emojiFilenameCopy = JSON.parse(JSON.stringify(emojiFilename));
-    subjectList[getWeekParity()][getDay(d)].forEach((element) => {
+    let emojiFilenameCopy = JSON.parse(JSON.stringify(emojiFilename));
+    let todayScheduleHTML = "";
+    subjectList[getWeekParity(d)][getDay(d)].forEach((element) => {
         if(element === null){
-            // 分隔符
-            document.getElementById("schedule").innerHTML += "<div class='scheduleSeparator'></div>";
+            todayScheduleHTML += "<div class='scheduleSeparator'></div>";
         }else{
-            // 课
+            let classDiv;
             if(emojiEnabled){
-                emojiIndex = Math.floor(Math.random() * emojiFilenameCopy.length);
-                document.getElementById("schedule").innerHTML += 
-                    "<div class='scheduleItem'>" +
-                    "<img class='emoji' src='emoji/" + emojiFilenameCopy[emojiIndex] + "' />" +
-                    "<span>" + element[1] + "</span></div>";
+                let emojiIndex = Math.floor(Math.random() * emojiFilenameCopy.length);
+                let emoji = emojiFilenameCopy[emojiIndex] || emojiFilename[0];
+                classDiv = `<div class='scheduleItem'><img class='emoji' src='emoji/${emoji}' /><span>${element[1]}</span></div>`;
                 emojiFilenameCopy.splice(emojiIndex, 1);
                 if(!emojiFilenameCopy.length){
                     emojiFilenameCopy = JSON.parse(JSON.stringify(emojiFilename));
                 }
             }else{
-                document.getElementById("schedule").innerHTML += 
-                    "<div class='scheduleItem'><span></span><span>" + element[1] + "</span></div>";
+                classDiv = `<div class='scheduleItem'><span></span><span>${element[1]}</span></div>`;
             }
+            todayScheduleHTML += classDiv;
         }
     });
+    document.getElementById("schedule").innerHTML = todayScheduleHTML;
 
-    // 设置值日表
-    if(dutyListConsistent){
-        dutyList[1] = dutyList[0];
-    }
-    document.getElementById("duty").innerHTML = dutyList[getWeekParity()][getDay(d)];
+    initTomorrowSchedule();
 
-    // 设置公告
-    if(announcementRandomOrder){
-        announcementList.sort(() => { return Math.random() - 0.5; });
+    if(dutyListConsistent){ dutyList[1] = dutyList[0]; }
+    document.getElementById("duty").innerHTML = dutyList[getWeekParity(d)][getDay(d)];
+
+    if(announcementRandomOrder){ announcementList.sort(() => { return Math.random() - 0.5; }); }
+    const announcementEl = document.getElementById("announcement");
+    if (announcementEl) {
+        const announcementText = announcementList.join(" • ");
+        announcementEl.innerHTML = announcementText;
+        const scrollSpeedFactor = 15;
+        const textWidth = announcementEl.offsetWidth;
+        const containerWidth = document.getElementById("announcement-container").offsetWidth;
+        const duration = (textWidth + containerWidth) / (scrollSpeedFactor * 10);
+        const minDuration = 10;
+        announcementEl.style.animationDuration = Math.max(duration, minDuration) + 's';
     }
-    document.getElementById("announcement").innerHTML = announcementList.join("&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;");
     
-    // 设置倒计时
     document.getElementById("countDown").innerHTML =  document.getElementById("countUp").innerHTML =  "";
     countdownList.forEach((element, index) => {
+        if (!element || element.length === 0) return;
         var interval = Date.parse(element[1]) - d;
         if(interval > 0){
             generateCountDown(index, element[0], parseInt(interval / 86400000 + 1));
         }else if(countdownShowPastDate){
-            generateCountUp(index, element[0], Math.abs(parseInt(interval / 86400000 + 1)) + 1);
+            generateCountUp(index, element[0], Math.abs(parseInt(interval / 86400000)));
         }
     });
 
     updateTime();
     updateSubject(d);
+
+    if (window.innerWidth >= 768) {
+        const tomorrowDetails = document.getElementById('tomorrow-schedule-wrapper');
+        if (tomorrowDetails) {
+            tomorrowDetails.open = true;
+        }
+    }
+    
     return;
 }
 
@@ -218,5 +282,7 @@ function nextTimeoutRev(index, name, days, now){
     }
 }
 
-init();
-window.setInterval("updateTime()", updateInterval);
+document.addEventListener("DOMContentLoaded", function() {
+    init();
+    window.setInterval("updateTime()", updateInterval);
+});

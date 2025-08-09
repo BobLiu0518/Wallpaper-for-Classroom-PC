@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教室壁纸 - GUI配置生成器 (By 风月同天)</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; background-color: #f4f7f6; color: #333; }
+        .container { max-width: 1200px; margin: auto; background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2 { text-align: center; color: #2c3e50; }
+        h1 { display: flex; justify-content: space-between; align-items: center; }
+        h2 { border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; margin-top: 40px; }
+        fieldset { border: 1px solid #ccc; border-radius: 5px; padding: 15px; margin-bottom: 20px; }
+        legend { font-weight: bold; color: #3498db; padding: 0 10px; }
+        label { display: block; margin-bottom: 5px; font-weight: 500; }
+        input[type="text"], input[type="number"], input[type="date"], select, textarea { width: 100%; padding: 8px; box-sizing: border-box; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 10px; }
+        input[type="checkbox"] { margin-right: 10px; }
+        .checkbox-label { display: flex; align-items: center; margin-bottom: 10px; }
+        .action-button { background: #3498db; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 4px; }
+        .action-button:hover { background: #2980b9; }
+        .countdown-item { display: flex; gap: 10px; align-items: center; padding: 10px; border: 1px dashed #ccc; margin-bottom: 10px; border-radius: 4px; }
+        .remove-btn { background: #e74c3c; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; }
+        .generate-button { background: #2ecc71; color: white; font-size: 1.2em; border: none; padding: 15px 30px; cursor: pointer; border-radius: 5px; width: 100%; margin-top: 20px; }
+        .generate-button:hover { background: #27ae60; }
+        #output-container { margin-top: 30px; }
+        #output-code { width: 100%; height: 400px; font-family: 'Courier New', Courier, monospace; font-size: 0.9em; background: #2d2d2d; color: #f0f0f0; border: 1px solid #ccc; border-radius: 4px; }
+        .copy-button { display: block; width: 100%; padding: 10px; margin-top: 10px; background: #f39c12; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .copy-button:hover { background: #e67e22; }
+        .help-text { font-size: 0.9em; color: #777; margin-bottom: 10px; padding: 10px; background-color: #ecf0f1; border-left: 4px solid #3498db; border-radius: 4px;}
+        .grid-2, .grid-3 { display: grid; gap: 20px; align-items: end; }
+        .grid-2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
+        .grid-3 { grid-template-columns: 1fr 1fr auto; gap: 20px; }
+        .hidden { display: none; }
+        .schedule-table { width: 100%; border-collapse: collapse; margin-top: 15px; table-layout: fixed; }
+        .schedule-table th, .schedule-table td { border: 1px solid #ccc; padding: 5px; text-align: center; vertical-align: top; }
+        .schedule-table th { background-color: #f2f2f2; }
+        .schedule-table input, .schedule-table select { margin-bottom: 0; width: 100%; border: none; background-color: transparent; padding: 8px 4px; }
+        .schedule-table input:focus, .schedule-table select:focus { outline: 1px solid #3498db; background-color: #fff; }
+        .subject-cell > div { display: flex; flex-direction: column; gap: 4px; }
+        .time-header { width: 110px; }
+        .time-header .help-text { font-size: 0.8em; padding: 5px; margin-top: 5px; text-align: left;}
+        .break-row td { background-color: #e0e0e0; font-weight: bold; }
+        .reset-button { background-color: #e74c3c; color: white; border: none; padding: 10px 20px; font-size: 0.9em; cursor: pointer; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>
+        <span>教室壁纸 - GUI配置生成器（By 风月同天）</span>
+        <button class="reset-button" onclick="resetSettings()">恢复默认设置</button>
+    </h1>
+    <p class="help-text" style="text-align:center;">您的所有编辑历史将自动保存在本浏览器中。下次打开此页面可继续编辑。</p>
+    
+    <fieldset>
+        <legend>通用设置</legend>
+        <div class="grid-2">
+            <div>
+                <label class="checkbox-label"><input type="checkbox" id="revWeek">反转单双周逻辑</label>
+            </div>
+            <div>
+                <label for="temporaryDayOfWeek">临时调课</label>
+                <select id="temporaryDayOfWeek">
+                    <option value="null">默认 (不调整)</option><option value="0">星期日</option><option value="1">星期一</option><option value="2">星期二</option><option value="3">星期三</option><option value="4">星期四</option><option value="5">星期五</option><option value="6">星期六</option>
+                </select>
+            </div>
+        </div>
+    </fieldset>
+
+    <fieldset>
+        <legend>课程表 (下拉选择模式)</legend>
+        <p class="help-text">请先设置好每天的课程节数，然后点击“生成/更新课表模板”来创建可编辑的表格。</p>
+        <div class="grid-3">
+            <div><label for="morning-periods">上午节数:</label><input type="number" id="morning-periods" value="5"></div>
+            <div><label for="afternoon-periods">下午节数:</label><input type="number" id="afternoon-periods" value="3"></div>
+            <button type="button" class="action-button" onclick="generateScheduleTables()">生成/更新模板</button>
+        </div>
+        <hr style="margin: 20px 0;">
+        <label class="checkbox-label">
+            <input type="checkbox" id="enable-double-week" onchange="handleDoubleWeekToggle()"><small style="margin-right:10px;">启用单/双周不同课表</small>
+            <small style="color: #e74c3c;">(提示: 请填写完默认模板，再勾选此项)</small>
+        </label>
+        <div id="single-week-schedule-container">
+            <h3>单周课表</h3>
+            <div id="single-week-table-wrapper" style="overflow-x: auto;"></div>
+        </div>
+        <div id="double-week-schedule-container" class="hidden">
+            <h3>双周课表</h3>
+            <div id="double-week-table-wrapper" style="overflow-x: auto;"></div>
+        </div>
+    </fieldset>
+    
+    <fieldset>
+        <legend>信息与显示</legend>
+        <div class="grid-2">
+            <div>
+                <label for="announcementList">滚动公告 (一行一个):</label><textarea id="announcementList" rows="4"></textarea>
+                <label class="checkbox-label"><input type="checkbox" id="announcementRandomOrder">随机排序公告</label>
+            </div>
+            <div>
+                <label class="checkbox-label"><input type="checkbox" id="dutyListConsistent" onchange="document.getElementById('duty-double-week-panel').style.display = this.checked ? 'none' : 'block';">单双周值日生表一致</label>
+                <div id="duty-single-week">
+                    <label>单周值日 (周一至五，周六日)</label>
+                    <input type="text" id="dutySingleMon" placeholder="周一"><input type="text" id="dutySingleTue" placeholder="周二">
+                    <input type="text" id="dutySingleWed" placeholder="周三"><input type="text" id="dutySingleThu" placeholder="周四">
+                    <input type="text" id="dutySingleFri" placeholder="周五"><input type="text" id="dutySingleSatSun" placeholder="周六/日">
+                </div>
+                 <div id="duty-double-week-panel" class="hidden" style="margin-top: 20px;">
+                    <label>双周值日 (周一至五，周六日)</label>
+                    <input type="text" id="dutyDoubleMon" placeholder="周一"><input type="text" id="dutyDoubleTue" placeholder="周二">
+                    <input type="text" id="dutyDoubleWed" placeholder="周三"><input type="text" id="dutyDoubleThu" placeholder="周四">
+                    <input type="text" id="dutyDoubleFri" placeholder="周五"><input type="text" id="dutyDoubleSatSun" placeholder="周六/日">
+                </div>
+            </div>
+        </div>
+    </fieldset>
+    
+    <fieldset>
+        <legend>高级设定</legend>
+        <div class="grid-2">
+             <div>
+                <label>倒计时事件</label>
+                <div id="countdown-container" style="margin-bottom: 10px;"></div>
+                <button type="button" class="action-button" onclick="addCountdownItem()">+ 添加事件</button>
+            </div>
+            <div>
+                <label class="checkbox-label"><input type="checkbox" id="countdownShowPastDate">显示已过期的事件</label>
+                <label class="checkbox-label"><input type="checkbox" id="countdownAnimation">启用倒计时动画</label>
+                <label class="checkbox-label"><input type="checkbox" id="showTimeSeconds">时钟显示秒数</label>
+                <label class="checkbox-label"><input type="checkbox" id="emojiEnabled">在课表中启用 Emoji</label>
+            </div>
+        </div>
+    </fieldset>
+
+    <button type="button" class="generate-button" onclick="generateAndSaveConfig()">🚀 生成并保存配置</button>
+
+    <div id="output-container" class="hidden">
+        <h2>生成结果</h2>
+        <p class="help-text">请复制以下所有代码，并覆盖到你的 `config.js` 文件中。</p>
+        <textarea id="output-code" readonly></textarea>
+        <button type="button" class="copy-button" onclick="copyToClipboard()">📋 复制到剪贴板</button>
+    </div>
+</div>
+
+<script>
+    const CONFIG_STORAGE_KEY = 'classroomWallpaperConfig_v2'; // 使用新key避免与旧版冲突
+    const SUBJECTS = ["语文", "数学", "外语", "物理", "化学", "生物", "政治", "历史", "地理", "体育", "音乐", "美术", "信息技术", "班会", "自习", "集体备课", "阅读", "写字", "劳动", { value: "---", text: "---", disabled: true }, { value: "_CUSTOM_", text: "自定义..." }];
+    const defaultSchedule = { "0-0": "外语", "0-1": "化学", "0-2": "语文", "0-3": "数学", "0-4": "物理", "0-5": "班会", "0-6": "地理", "0-7": "集体备课", "1-0": "外语", "1-1": "外语", "1-2": "地理", "1-3": "数学", "1-4": "体育", "1-5": "语文", "1-6": "化学", "1-7": "物理", "2-0": "语文", "2-1": "语文", "2-2": "外语", "2-3": "外语", "2-4": "化学", "2-5": "数学", "2-6": "地理", "2-7": "物理", "3-0": "数学", "3-1": "体育", "3-2": "语文", "3-3": "外语", "3-4": "外语", "3-5": "物理", "3-6": "地理", "3-7": "化学", "4-0": "语文", "4-1": "地理", "4-2": "化学", "4-3": "数学", "4-4": "数学", "4-5": "物理", "4-6": "物理", "4-7": "外语" };
+    
+    // --- 本地存储核心逻辑 ---
+    function saveSettings() {
+        const settings = {};
+        document.querySelectorAll('input, select, textarea').forEach(el => {
+            if (!el.id) return;
+            if (el.type === 'checkbox' || el.type === 'radio') {
+                settings[el.id] = el.checked;
+            } else {
+                settings[el.id] = el.value;
+            }
+        });
+        settings.countdownList = [];
+        document.querySelectorAll('.countdown-item').forEach(item => {
+            settings.countdownList.push({ name: item.querySelector('.countdown-name').value, date: item.querySelector('.countdown-date').value });
+        });
+        function getScheduleData(weekType) {
+            const data = []; const wrapper = document.getElementById(`${weekType}-week-table-wrapper`); if (!wrapper) return data;
+            wrapper.querySelectorAll('tbody tr').forEach(row => {
+                if (row.classList.contains('break-row')) { data.push({ type: 'break' }); } else {
+                    const subjects = Array.from(row.querySelectorAll('.subject-cell')).map(cell => {
+                        const select = cell.querySelector('.subject-select');
+                        return select.value === '_CUSTOM_' ? cell.querySelector('.custom-subject-input').value : select.value;
+                    });
+                    data.push({ type: 'class', time: row.querySelector('.time-input').value, subjects: subjects });
+                }
+            }); return data;
+        }
+        settings.scheduleData = { single: getScheduleData('single'), double: getScheduleData('double') };
+        try {
+            localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(settings));
+            console.log('Settings saved to Local Storage.');
+        } catch (e) { console.error("Failed to save settings:", e); }
+    }
+
+    function loadSettings() {
+        const savedSettingsJSON = localStorage.getItem(CONFIG_STORAGE_KEY);
+        if (!savedSettingsJSON) { initDefaults(); return; }
+        try {
+            const settings = JSON.parse(savedSettingsJSON);
+            console.log('Loading settings from Local Storage.');
+            for (const id in settings) {
+                const el = document.getElementById(id);
+                if (el) {
+                    if (el.type === 'checkbox' || el.type === 'radio') { el.checked = settings[id]; } else { el.value = settings[id]; }
+                }
+            }
+            const countdownContainer = document.getElementById('countdown-container'); countdownContainer.innerHTML = '';
+            if (settings.countdownList) { settings.countdownList.forEach(item => addCountdownItem(item.name, item.date)); }
+            generateScheduleTables();
+            function applyScheduleData(weekType, data) {
+                const wrapper = document.getElementById(`${weekType}-week-table-wrapper`); if (!data || !wrapper) return;
+                const rows = wrapper.querySelectorAll('tbody tr:not(.break-row)'); let classRowIndex = 0;
+                data.forEach(rowData => {
+                    if (rowData.type === 'class' && rows[classRowIndex]) {
+                        const row = rows[classRowIndex]; row.querySelector('.time-input').value = rowData.time;
+                        row.querySelectorAll('.subject-cell').forEach((cell, cellIndex) => {
+                            const subjectValue = rowData.subjects[cellIndex]; const select = cell.querySelector('.subject-select');
+                            const customInput = cell.querySelector('.custom-subject-input'); let optionExists = Array.from(select.options).some(opt => opt.value === subjectValue);
+                            if (optionExists) { select.value = subjectValue; customInput.classList.add('hidden'); } else if (subjectValue) { select.value = '_CUSTOM_'; customInput.classList.remove('hidden'); customInput.value = subjectValue; } else { select.value = ''; customInput.classList.add('hidden'); }
+                        }); classRowIndex++;
+                    }
+                });
+            }
+            if (settings.scheduleData) {
+                applyScheduleData('single', settings.scheduleData.single);
+                if (settings['enable-double-week']) { handleDoubleWeekToggle(true); applyScheduleData('double', settings.scheduleData.double); }
+            }
+            document.getElementById('dutyListConsistent').dispatchEvent(new Event('change'));
+        } catch (e) { console.error("Failed to load settings:", e); initDefaults(); }
+    }
+
+    function resetSettings() { if (confirm('您确定要恢复所有默认设置吗？您当前的编辑历史将被清空。')) { localStorage.removeItem(CONFIG_STORAGE_KEY); location.reload(); } }
+
+    // --- 界面与核心逻辑 ---
+    function generateScheduleTables() { const morningPeriods = parseInt(document.getElementById('morning-periods').value) || 0; const afternoonPeriods = parseInt(document.getElementById('afternoon-periods').value) || 0; const singleWrapper = document.getElementById('single-week-table-wrapper'); singleWrapper.innerHTML = createTableHTML(morningPeriods, afternoonPeriods, 'single'); if (document.getElementById('enable-double-week').checked) { handleDoubleWeekToggle(true); } }
+    function createSubjectSelect(defaultValue = "") { let html = `<select class="subject-select" onchange="handleSubjectChange(this)">`; let found = false; SUBJECTS.forEach(subject => { const value = typeof subject === 'object' ? subject.value : subject; const text = typeof subject === 'object' ? subject.text : subject; const disabled = typeof subject === 'object' ? subject.disabled : false; const isSelected = (value === defaultValue); if (isSelected) found = true; html += `<option value="${value}" ${isSelected ? 'selected' : ''} ${disabled ? 'disabled' : ''}>${text}</option>`; }); if (!found && defaultValue) { html += `<option value="${defaultValue}" selected>${defaultValue} (自定义)</option>`; } html += `</select>`; html += `<input type="text" class="custom-subject-input hidden" placeholder="课程名" value="${!found && defaultValue ? defaultValue : ''}">`; return html; }
+    function createTableHTML(morning, afternoon, weekType) { const days = ['一', '二', '三', '四', '五', '六', '日']; const defaultTimes = ["0740", "0830", "0920", "1020", "1120", "1430", "1540", "1630"]; let table = '<table class="schedule-table">'; table += `<thead><tr><th class="time-header">时间<div class="help-text">格式HHMM</div></th>`; days.forEach(day => table += `<th>星期${day}</th>`); table += '</tr></thead><tbody>'; let periodIndex = 0; const processRow = () => { let rowHtml = `<tr><td><input type="text" class="time-input" value="${defaultTimes[periodIndex] || ''}"></td>`; days.forEach((day, dayIndex) => { const subject = weekType === 'single' ? (defaultSchedule[`${dayIndex}-${periodIndex}`] || '') : ''; rowHtml += `<td class="subject-cell"><div>${createSubjectSelect(subject)}</div></td>`; }); rowHtml += '</tr>'; periodIndex++; return rowHtml; }; for (let i = 1; i <= morning; i++) table += processRow(); if (morning > 0 && afternoon > 0) table += `<tr class="break-row"><td colspan="${days.length + 1}">午休</td></tr>`; for (let i = 1; i <= afternoon; i++) table += processRow(); table += '</tbody></table>'; return table; }
+    function handleSubjectChange(selectElement) { const customInput = selectElement.nextElementSibling; if (selectElement.value === '_CUSTOM_') { customInput.classList.remove('hidden'); customInput.focus(); } else { customInput.classList.add('hidden'); } }
+    function handleDoubleWeekToggle(force = false) { const isEnabled = document.getElementById('enable-double-week').checked; const doubleContainer = document.getElementById('double-week-schedule-container'); if (isEnabled || force) { doubleContainer.classList.remove('hidden'); if (document.getElementById('double-week-table-wrapper').innerHTML.trim() === '') { const morning = parseInt(document.getElementById('morning-periods').value) || 0; const afternoon = parseInt(document.getElementById('afternoon-periods').value) || 0; document.getElementById('double-week-table-wrapper').innerHTML = createTableHTML(morning, afternoon, 'double'); } copyScheduleContent('single', 'double'); } else { doubleContainer.classList.add('hidden'); } }
+    function copyScheduleContent(sourceWeekType, targetWeekType) { const sourceCells = document.querySelectorAll(`#${sourceWeekType}-week-table-wrapper tbody tr`); const targetCells = document.querySelectorAll(`#${targetWeekType}-week-table-wrapper tbody tr`); if (sourceCells.length !== targetCells.length) return; for (let i = 0; i < sourceCells.length; i++) { const sourceRow = sourceCells[i]; const targetRow = targetCells[i]; const sourceTime = sourceRow.querySelector('.time-input'); const targetTime = targetRow.querySelector('.time-input'); if (sourceTime && targetTime) targetTime.value = sourceTime.value; const sourceSelects = sourceRow.querySelectorAll('.subject-select'); const targetSelects = targetRow.querySelectorAll('.subject-select'); if (sourceSelects.length !== targetSelects.length) continue; for (let j = 0; j < sourceSelects.length; j++) { const sourceSelect = sourceSelects[j]; const targetSelect = targetSelects[j]; const sourceValue = sourceSelect.value === '_CUSTOM_' ? sourceSelect.nextElementSibling.value : sourceSelect.value; let targetHasOption = Array.from(targetSelect.options).some(opt => opt.value === sourceValue); if (targetHasOption) { targetSelect.value = sourceValue; handleSubjectChange(targetSelect); } else { targetSelect.value = '_CUSTOM_'; handleSubjectChange(targetSelect); targetSelect.nextElementSibling.value = sourceValue; } } } }
+    function addCountdownItem(name = '', date = '') { const container = document.getElementById('countdown-container'); const item = document.createElement('div'); item.className = 'countdown-item'; item.innerHTML = `<input type="text" class="countdown-name" placeholder="事件名称" value="${name}"><input type="date" class="countdown-date" value="${date}"><button type="button" class="remove-btn" onclick="this.parentElement.remove()">移除</button>`; container.appendChild(item); }
+    function parseScheduleTable(weekType) { const wrapper = document.getElementById(`${weekType}-week-table-wrapper`); const rows = wrapper.querySelectorAll('tbody tr'); const dailySchedules = Array.from({ length: 7 }, () => []); rows.forEach(row => { if (row.classList.contains('break-row')) { dailySchedules.forEach(day => day.push('null')); } else { const time = row.querySelector('.time-input').value.trim(); row.querySelectorAll('.subject-cell').forEach((cell, dayIndex) => { const select = cell.querySelector('.subject-select'); let subject = select.value; if (subject === '_CUSTOM_') { subject = cell.querySelector('.custom-subject-input').value.trim(); } if (subject) { dailySchedules[dayIndex].push(`[${time}, "${subject}"]`); } }); } }); const finalOrder = [dailySchedules[6], dailySchedules[0], dailySchedules[1], dailySchedules[2], dailySchedules[3], dailySchedules[4], dailySchedules[5]]; return finalOrder.map(day => { let finalDay = [], inBreak = false; day.forEach(item => { if (item === 'null') { if (!inBreak) finalDay.push(item); inBreak = true; } else { finalDay.push(item); inBreak = false; } }); if (finalDay.every(item => item === 'null' || !item)) return '[]'; return `[${finalDay.join(',\n            ')}]`; }).join(',\n        '); }
+    function copyToClipboard() { const output = document.getElementById('output-code'); output.select(); document.execCommand('copy'); alert('代码已复制到剪贴板！'); }
+    
+    // --- 生成和保存 ---
+    function generateAndSaveConfig() {
+        saveSettings();
+        generateConfig();
+    }
+    
+    function generateConfig() {
+        const getStr = id => JSON.stringify(document.getElementById(id).value); const getNum = id => document.getElementById(id).value || 0; const getBool = id => document.getElementById(id).checked;
+        const announcementList = document.getElementById('announcementList').value.split('\n').filter(line => line.trim()).map(line => JSON.stringify(line.trim())).join(',\n    ');
+        const countdownList = Array.from(document.querySelectorAll('.countdown-item')).map(item => { const name = item.querySelector('.countdown-name').value; const date = item.querySelector('.countdown-date').value; return (name && date) ? `["${name}", "${date.replace(/-/g, '/')}"]` : `[]` }).join(',\n    ');
+        const dutySingle = `[${getStr('dutySingleSatSun')}, ${getStr('dutySingleMon')}, ${getStr('dutySingleTue')}, ${getStr('dutySingleWed')}, ${getStr('dutySingleThu')}, ${getStr('dutySingleFri')}, ${getStr('dutySingleSatSun')}]`;
+        const dutyDouble = `[${getStr('dutyDoubleSatSun')}, ${getStr('dutyDoubleMon')}, ${getStr('dutyDoubleTue')}, ${getStr('dutyDoubleWed')}, ${getStr('dutyDoubleThu')}, ${getStr('dutyDoubleFri')}, ${getStr('dutyDoubleSatSun')}]`;
+        const subjectListConsistent = !getBool('enable-double-week'); const singleWeekData = parseScheduleTable('single'); const doubleWeekData = subjectListConsistent ? singleWeekData : parseScheduleTable('double');
+        const template = `// ... (此处为生成config.js内容的模板字符串，与上一版相同，为简洁省略) ...`;
+        document.getElementById('output-code').value = `// Generated on ${new Date().toLocaleString()}\nvar revWeek = ${getBool('revWeek')};\nvar temporaryDayOfWeek = ${document.getElementById('temporaryDayOfWeek').value};\nvar announcementList = [${announcementList}];\nvar announcementRandomOrder = ${getBool('announcementRandomOrder')};\nvar countdownList = [${countdownList}];\nvar countdownShowPastDate = ${getBool('countdownShowPastDate')};\nvar countdownAnimation = ${getBool('countdownAnimation')};\nvar dutyListConsistent = ${getBool('dutyListConsistent')};\nvar dutyList = [${dutySingle}, ${dutyDouble}];\nvar emojiEnabled = ${getBool('emojiEnabled')};\nvar emojiFilename = [];\nvar subjectListConsistent = ${subjectListConsistent};\nvar subjectList = [[${singleWeekData}],[${doubleWeekData}]];\nvar defaultClassDuration = 40;\nvar promptAfterSchool = "请今日值日生做好值日工作";\nvar promptEmptySchedule = "今日无课";\nvar showTimeSeconds = ${getBool('showTimeSeconds')};\nvar updateInterval = 500;\nvar promptUpdateDelay = 2;`;
+        document.getElementById('output-container').classList.remove('hidden'); window.scrollTo(0, document.body.scrollHeight); alert('配置已生成！');
+    }
+
+    // --- 页面加载 ---
+    function initDefaults() {
+        console.log('Initializing with default values.');
+        generateScheduleTables();
+        addCountdownItem('高考', '2026-06-07');
+        addCountdownItem('惠一调', '2025-07-03');
+        document.getElementById('duty-double-week-panel').style.display = 'none';
+        // 设置默认值
+        document.getElementById('revWeek').checked = true;
+        document.getElementById('announcementRandomOrder').checked = true;
+        document.getElementById('dutyListConsistent').checked = true;
+        document.getElementById('showTimeSeconds').checked = true;
+        document.getElementById('emojiEnabled').checked = true;
+    }
+
+    window.onload = loadSettings;
+</script>
+</body>
+</html>
