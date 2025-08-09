@@ -1,28 +1,46 @@
-<html>
-    <head>
-        <meta charset="UTF-8" />
-        <title>Wallpaper</title>
-        <link rel="stylesheet" type="text/css" href="style.css" />
-        <script type="text/javascript" src="config.js"></script>
-    </head>
-    <body>
-        <div id="divouter">
-            <div id="divleft">
-                <p class="normalFont" id="dutytitle">值日生:</p>
-                <p class="normalFont" id="duty">JavaScript 执行失败<br />请检查 config.js 中是否有语法错误</p>
-            </div>
-            <div id="divmiddle">
-                <p class="digitalFont" id="clock">11:45<small><small>:14</small></small></p>
-                <p class="digitalFont" id="subject">下一节 自修 12:34</p>
-                <marquee class="normalFont" id="announcement" scrollamount="12"></marquee>
-                <p class="digitalFont" id="countDown"></p>
-                <p class="digitalFont" id="countUp"></p>
-                </p>
-            </div>
-            <div id="divright">
-                <p class="normalFont" id="schedule"><br /></p>
-            </div>
-            <script type="text/javascript" src="core.js"></script>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <title>Wallpaper</title>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <script type="text/javascript" src="config.js"></script>
+</head>
+<body onload="setRandomBackground()">
+    <div id="divouter">
+        <div id="divleft">
+            <p class="normalFont" id="dutytitle">值日生:</p>
+            <p class="normalFont" id="duty">JavaScript 执行失败<br />请检查 config.js 中是否有语法错误</p>
         </div>
-    </body>
+        <div id="divmiddle">
+            <p class="digitalFont" id="clock">11:45<small><small>:14</small></small></p>
+            <p class="digitalFont" id="subject">下一节 自修 12:34</p>
+            <div id="announcement-container">
+                <p class="normalFont" id="announcement"></p>
+            </div>
+            <p class="digitalFont" id="countDown"></p>
+            <p class="digitalFont" id="countUp"></p>
+        </div>
+        <div id="divright">
+            <div id="today-schedule-wrapper">
+                <p class="normalFont" id="scheduletitle">今日课表</p>
+                <div class="normalFont" id="schedule"></div>
+            </div>
+            <details id="tomorrow-schedule-wrapper">
+                <summary class="normalFont" id="tomorrow-scheduletitle">明日课表</summary>
+                <div class="normalFont" id="tomorrow-schedule"></div>
+            </details>
+        </div>
+        <script type="text/javascript" src="core.js"></script>
+    </div>
+    <script>
+        function setRandomBackground() {
+            var images = [
+                'resource/image1.jpg', 'resource/image2.jpg', 'resource/image3.jpg', 'resource/image4.jpg', 'resource/9月30日.png'
+            ];
+            var randomIndex = Math.floor(Math.random() * images.length);
+            document.body.style.backgroundImage = 'url(' + images[randomIndex] + ')';
+        }
+    </script>
+</body>
 </html>
