@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>教室壁纸 - GUI配置生成器 (By 风月同天)</title>
+    <title>教室壁纸 - 配置编辑器-by 风月同天</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; background-color: #f4f7f6; color: #333; }
         .container { max-width: 1200px; margin: auto; background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         h1, h2 { text-align: center; color: #2c3e50; }
-        h1 { display: flex; justify-content: space-between; align-items: center; }
+        h1 { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 15px; }
         h2 { border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; margin-top: 40px; }
         fieldset { border: 1px solid #ccc; border-radius: 5px; padding: 15px; margin-bottom: 20px; }
         legend { font-weight: bold; color: #3498db; padding: 0 10px; }
@@ -16,8 +16,8 @@
         input[type="text"], input[type="number"], input[type="date"], select, textarea { width: 100%; padding: 8px; box-sizing: border-box; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 10px; }
         input[type="checkbox"] { margin-right: 10px; }
         .checkbox-label { display: flex; align-items: center; margin-bottom: 10px; }
-        .action-button { background: #3498db; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 4px; }
-        .action-button:hover { background: #2980b9; }
+        .action-button, .import-button { background: #3498db; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 4px; font-size: 0.9em; }
+        .action-button:hover, .import-button:hover { background: #2980b9; }
         .countdown-item { display: flex; gap: 10px; align-items: center; padding: 10px; border: 1px dashed #ccc; margin-bottom: 10px; border-radius: 4px; }
         .remove-btn { background: #e74c3c; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; }
         .generate-button { background: #2ecc71; color: white; font-size: 1.2em; border: none; padding: 15px 30px; cursor: pointer; border-radius: 5px; width: 100%; margin-top: 20px; }
@@ -47,10 +47,14 @@
 
 <div class="container">
     <h1>
-        <span>教室壁纸 - GUI配置生成器（By 风月同天）</span>
-        <button class="reset-button" onclick="resetSettings()">恢复默认设置</button>
+        <span>教室壁纸 - GUI配置编辑器-by 风月同天</span>
+        <div>
+            <input type="file" id="import-config-file" class="hidden" onchange="importConfigFile(event)" accept=".js">
+            <button class="import-button" onclick="document.getElementById('import-config-file').click()">导入 config.js</button>
+            <button class="reset-button" onclick="resetSettings()">恢复默认</button>
+        </div>
     </h1>
-    <p class="help-text" style="text-align:center;">您的所有编辑历史将自动保存在本浏览器中。下次打开此页面可继续编辑。</p>
+    <p class="help-text" style="text-align:center;">您的所有编辑历史将自动保存在本浏览器中。您可以随时导入现有的 `config.js` 文件进行修改。</p>
     
     <fieldset>
         <legend>通用设置</legend>
@@ -143,73 +147,138 @@
 </div>
 
 <script>
-    const CONFIG_STORAGE_KEY = 'classroomWallpaperConfig_v2'; // 使用新key避免与旧版冲突
+    const CONFIG_STORAGE_KEY = 'classroomWallpaperConfig_v3';
     const SUBJECTS = ["语文", "数学", "外语", "物理", "化学", "生物", "政治", "历史", "地理", "体育", "音乐", "美术", "信息技术", "班会", "自习", "集体备课", "阅读", "写字", "劳动", { value: "---", text: "---", disabled: true }, { value: "_CUSTOM_", text: "自定义..." }];
     const defaultSchedule = { "0-0": "外语", "0-1": "化学", "0-2": "语文", "0-3": "数学", "0-4": "物理", "0-5": "班会", "0-6": "地理", "0-7": "集体备课", "1-0": "外语", "1-1": "外语", "1-2": "地理", "1-3": "数学", "1-4": "体育", "1-5": "语文", "1-6": "化学", "1-7": "物理", "2-0": "语文", "2-1": "语文", "2-2": "外语", "2-3": "外语", "2-4": "化学", "2-5": "数学", "2-6": "地理", "2-7": "物理", "3-0": "数学", "3-1": "体育", "3-2": "语文", "3-3": "外语", "3-4": "外语", "3-5": "物理", "3-6": "地理", "3-7": "化学", "4-0": "语文", "4-1": "地理", "4-2": "化学", "4-3": "数学", "4-4": "数学", "4-5": "物理", "4-6": "物理", "4-7": "外语" };
+
+    function importConfigFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const content = e.target.result;
+            try {
+                parseAndApplyConfig(content);
+                alert('配置导入成功！界面已更新。');
+            } catch (error) {
+                alert('导入失败！请确保上传的是格式正确的 config.js 文件。\n错误信息: ' + error.message);
+                console.error("Config parsing error:", error);
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+    }
+
+    function parseAndApplyConfig(content) {
+        const getVal = (regex) => { const match = content.match(regex); return (match && match[1]) ? match[1].trim() : null; };
+        const getBool = (regex) => getVal(regex) === 'true';
+        const getArr = (regex) => { const val = getVal(regex); return val ? new Function(`return ${val}`)() : []; };
+
+        document.getElementById('revWeek').checked = getBool(/var\s+revWeek\s*=\s*(.*?);/);
+        document.getElementById('temporaryDayOfWeek').value = getVal(/var\s+temporaryDayOfWeek\s*=\s*(.*?);/) || 'null';
+        document.getElementById('announcementRandomOrder').checked = getBool(/var\s+announcementRandomOrder\s*=\s*(.*?);/);
+        document.getElementById('countdownShowPastDate').checked = getBool(/var\s+countdownShowPastDate\s*=\s*(.*?);/);
+        document.getElementById('countdownAnimation').checked = getBool(/var\s+countdownAnimation\s*=\s*(.*?);/);
+        document.getElementById('dutyListConsistent').checked = getBool(/var\s+dutyListConsistent\s*=\s*(.*?);/);
+        document.getElementById('emojiEnabled').checked = getBool(/var\s+emojiEnabled\s*=\s*(.*?);/);
+        document.getElementById('showTimeSeconds').checked = getBool(/var\s+showTimeSeconds\s*=\s*(.*?);/);
+
+        document.getElementById('announcementList').value = getArr(/var\s+announcementList\s*=\s*(\[[\s\S]*?\]);/).join('\n');
+
+        const countdownData = getArr(/var\s+countdownList\s*=\s*(\[[\s\S]*?\]);/);
+        const countdownContainer = document.getElementById('countdown-container');
+        countdownContainer.innerHTML = '';
+        countdownData.forEach(item => { if (item && item.length === 2) { addCountdownItem(item[0], item[1].replace(/\//g, '-')); } });
+
+        const dutyData = getArr(/var\s+dutyList\s*=\s*(\[[\s\S]*?\]);/);
+        if (dutyData && dutyData.length >= 1) {
+            const [sun, mon, tue, wed, thu, fri, sat] = dutyData[0];
+            document.getElementById('dutySingleMon').value = mon; document.getElementById('dutySingleTue').value = tue;
+            document.getElementById('dutySingleWed').value = wed; document.getElementById('dutySingleThu').value = thu;
+            document.getElementById('dutySingleFri').value = fri; document.getElementById('dutySingleSatSun').value = sun;
+        }
+        if (dutyData && dutyData.length >= 2) {
+            const [sun, mon, tue, wed, thu, fri, sat] = dutyData[1];
+            document.getElementById('dutyDoubleMon').value = mon; document.getElementById('dutyDoubleTue').value = tue;
+            document.getElementById('dutyDoubleWed').value = wed; document.getElementById('dutyDoubleThu').value = thu;
+            document.getElementById('dutyDoubleFri').value = fri; document.getElementById('dutyDoubleSatSun').value = sun;
+        }
+        document.getElementById('dutyListConsistent').dispatchEvent(new Event('change'));
+
+        const subjectData = getArr(/var\s+subjectList\s*=\s*(\[[\s\S]*?\]);/);
+        const isConsistent = getBool(/var\s+subjectListConsistent\s*=\s*(.*?);/);
+        document.getElementById('enable-double-week').checked = !isConsistent;
+
+        function applySchedule(weekType, data) {
+            if (!data) return;
+            const weekSchedule = [data[1], data[2], data[3], data[4], data[5], data[6], data[0]]; // Mon-Sun
+            let morningCount = 0, afternoonCount = 0, foundBreak = false;
+            if (weekSchedule[0]) {
+                weekSchedule[0].forEach(item => {
+                    if (item === null) foundBreak = true;
+                    else if (!foundBreak) morningCount++; else afternoonCount++;
+                });
+            }
+            document.getElementById('morning-periods').value = morningCount;
+            document.getElementById('afternoon-periods').value = afternoonCount;
+            generateScheduleTables();
+
+            const wrapper = document.getElementById(`${weekType}-week-table-wrapper`);
+            const rows = wrapper.querySelectorAll('tbody tr:not(.break-row)');
+            
+            for (let i = 0; i < morningCount + afternoonCount; i++) {
+                const row = rows[i];
+                if (!row) continue;
+                
+                let time = '';
+                for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
+                    if (weekSchedule[dayIdx] && weekSchedule[dayIdx][i] && weekSchedule[dayIdx][i] !== null) {
+                        time = String(weekSchedule[dayIdx][i][0]).padStart(4, '0');
+                        break;
+                    }
+                }
+                row.querySelector('.time-input').value = time;
+                
+                row.querySelectorAll('.subject-cell').forEach((cell, dayIndex) => {
+                    const course = (weekSchedule[dayIndex] && weekSchedule[dayIndex][i]) ? weekSchedule[dayIndex][i] : null;
+                    const subjectValue = (course && course !== null) ? course[1] : '';
+                    const select = cell.querySelector('.subject-select');
+                    const customInput = cell.querySelector('.custom-subject-input');
+                    let optionExists = Array.from(select.options).some(opt => opt.value === subjectValue);
+                    if (optionExists) { select.value = subjectValue; } 
+                    else if (subjectValue) { select.value = '_CUSTOM_'; customInput.value = subjectValue; }
+                    else { select.value = ''; }
+                    handleSubjectChange(select);
+                });
+            }
+        }
+        
+        if (subjectData && subjectData.length >= 1) applySchedule('single', subjectData[0]);
+        if (subjectData && subjectData.length >= 2 && !isConsistent) {
+            handleDoubleWeekToggle(true);
+            applySchedule('double', subjectData[1]);
+        }
+    }
     
-    // --- 本地存储核心逻辑 ---
     function saveSettings() {
         const settings = {};
-        document.querySelectorAll('input, select, textarea').forEach(el => {
-            if (!el.id) return;
-            if (el.type === 'checkbox' || el.type === 'radio') {
-                settings[el.id] = el.checked;
-            } else {
-                settings[el.id] = el.value;
-            }
-        });
-        settings.countdownList = [];
-        document.querySelectorAll('.countdown-item').forEach(item => {
-            settings.countdownList.push({ name: item.querySelector('.countdown-name').value, date: item.querySelector('.countdown-date').value });
-        });
-        function getScheduleData(weekType) {
-            const data = []; const wrapper = document.getElementById(`${weekType}-week-table-wrapper`); if (!wrapper) return data;
-            wrapper.querySelectorAll('tbody tr').forEach(row => {
-                if (row.classList.contains('break-row')) { data.push({ type: 'break' }); } else {
-                    const subjects = Array.from(row.querySelectorAll('.subject-cell')).map(cell => {
-                        const select = cell.querySelector('.subject-select');
-                        return select.value === '_CUSTOM_' ? cell.querySelector('.custom-subject-input').value : select.value;
-                    });
-                    data.push({ type: 'class', time: row.querySelector('.time-input').value, subjects: subjects });
-                }
-            }); return data;
-        }
+        document.querySelectorAll('input, select, textarea').forEach(el => { if (el.id) { settings[el.id] = (el.type === 'checkbox' || el.type === 'radio') ? el.checked : el.value; } });
+        settings.countdownList = Array.from(document.querySelectorAll('.countdown-item')).map(item => ({ name: item.querySelector('.countdown-name').value, date: item.querySelector('.countdown-date').value }));
+        const getScheduleData = (weekType) => { const data = []; const wrapper = document.getElementById(`${weekType}-week-table-wrapper`); if (!wrapper) return data; wrapper.querySelectorAll('tbody tr').forEach(row => { if (row.classList.contains('break-row')) { data.push({ type: 'break' }); } else { const subjects = Array.from(row.querySelectorAll('.subject-cell')).map(cell => { const select = cell.querySelector('.subject-select'); return select.value === '_CUSTOM_' ? cell.querySelector('.custom-subject-input').value : select.value; }); data.push({ type: 'class', time: row.querySelector('.time-input').value, subjects: subjects }); } }); return data; };
         settings.scheduleData = { single: getScheduleData('single'), double: getScheduleData('double') };
-        try {
-            localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(settings));
-            console.log('Settings saved to Local Storage.');
-        } catch (e) { console.error("Failed to save settings:", e); }
+        try { localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(settings)); console.log('Settings saved.'); } catch (e) { console.error("Failed to save settings:", e); }
     }
 
     function loadSettings() {
         const savedSettingsJSON = localStorage.getItem(CONFIG_STORAGE_KEY);
         if (!savedSettingsJSON) { initDefaults(); return; }
         try {
-            const settings = JSON.parse(savedSettingsJSON);
-            console.log('Loading settings from Local Storage.');
-            for (const id in settings) {
-                const el = document.getElementById(id);
-                if (el) {
-                    if (el.type === 'checkbox' || el.type === 'radio') { el.checked = settings[id]; } else { el.value = settings[id]; }
-                }
-            }
+            const settings = JSON.parse(savedSettingsJSON); console.log('Loading settings.');
+            for (const id in settings) { const el = document.getElementById(id); if (el) { if (el.type === 'checkbox' || el.type === 'radio') { el.checked = settings[id]; } else { el.value = settings[id]; } } }
             const countdownContainer = document.getElementById('countdown-container'); countdownContainer.innerHTML = '';
-            if (settings.countdownList) { settings.countdownList.forEach(item => addCountdownItem(item.name, item.date)); }
+            if (settings.countdownList) settings.countdownList.forEach(item => addCountdownItem(item.name, item.date));
             generateScheduleTables();
-            function applyScheduleData(weekType, data) {
-                const wrapper = document.getElementById(`${weekType}-week-table-wrapper`); if (!data || !wrapper) return;
-                const rows = wrapper.querySelectorAll('tbody tr:not(.break-row)'); let classRowIndex = 0;
-                data.forEach(rowData => {
-                    if (rowData.type === 'class' && rows[classRowIndex]) {
-                        const row = rows[classRowIndex]; row.querySelector('.time-input').value = rowData.time;
-                        row.querySelectorAll('.subject-cell').forEach((cell, cellIndex) => {
-                            const subjectValue = rowData.subjects[cellIndex]; const select = cell.querySelector('.subject-select');
-                            const customInput = cell.querySelector('.custom-subject-input'); let optionExists = Array.from(select.options).some(opt => opt.value === subjectValue);
-                            if (optionExists) { select.value = subjectValue; customInput.classList.add('hidden'); } else if (subjectValue) { select.value = '_CUSTOM_'; customInput.classList.remove('hidden'); customInput.value = subjectValue; } else { select.value = ''; customInput.classList.add('hidden'); }
-                        }); classRowIndex++;
-                    }
-                });
-            }
+            const applyScheduleData = (weekType, data) => { const wrapper = document.getElementById(`${weekType}-week-table-wrapper`); if (!data || !wrapper) return; const rows = wrapper.querySelectorAll('tbody tr:not(.break-row)'); let classRowIndex = 0; data.forEach(rowData => { if (rowData.type === 'class' && rows[classRowIndex]) { const row = rows[classRowIndex]; row.querySelector('.time-input').value = rowData.time; row.querySelectorAll('.subject-cell').forEach((cell, cellIndex) => { const subjectValue = rowData.subjects[cellIndex]; const select = cell.querySelector('.subject-select'); const customInput = cell.querySelector('.custom-subject-input'); let optionExists = Array.from(select.options).some(opt => opt.value === subjectValue); if (optionExists) { select.value = subjectValue; customInput.classList.add('hidden'); } else if (subjectValue) { select.value = '_CUSTOM_'; customInput.classList.remove('hidden'); customInput.value = subjectValue; } else { select.value = ''; customInput.classList.add('hidden'); } }); classRowIndex++; } }); };
             if (settings.scheduleData) {
                 applyScheduleData('single', settings.scheduleData.single);
                 if (settings['enable-double-week']) { handleDoubleWeekToggle(true); applyScheduleData('double', settings.scheduleData.double); }
@@ -220,50 +289,18 @@
 
     function resetSettings() { if (confirm('您确定要恢复所有默认设置吗？您当前的编辑历史将被清空。')) { localStorage.removeItem(CONFIG_STORAGE_KEY); location.reload(); } }
 
-    // --- 界面与核心逻辑 ---
-    function generateScheduleTables() { const morningPeriods = parseInt(document.getElementById('morning-periods').value) || 0; const afternoonPeriods = parseInt(document.getElementById('afternoon-periods').value) || 0; const singleWrapper = document.getElementById('single-week-table-wrapper'); singleWrapper.innerHTML = createTableHTML(morningPeriods, afternoonPeriods, 'single'); if (document.getElementById('enable-double-week').checked) { handleDoubleWeekToggle(true); } }
-    function createSubjectSelect(defaultValue = "") { let html = `<select class="subject-select" onchange="handleSubjectChange(this)">`; let found = false; SUBJECTS.forEach(subject => { const value = typeof subject === 'object' ? subject.value : subject; const text = typeof subject === 'object' ? subject.text : subject; const disabled = typeof subject === 'object' ? subject.disabled : false; const isSelected = (value === defaultValue); if (isSelected) found = true; html += `<option value="${value}" ${isSelected ? 'selected' : ''} ${disabled ? 'disabled' : ''}>${text}</option>`; }); if (!found && defaultValue) { html += `<option value="${defaultValue}" selected>${defaultValue} (自定义)</option>`; } html += `</select>`; html += `<input type="text" class="custom-subject-input hidden" placeholder="课程名" value="${!found && defaultValue ? defaultValue : ''}">`; return html; }
+    function generateScheduleTables() { const morningPeriods = parseInt(document.getElementById('morning-periods').value) || 0; const afternoonPeriods = parseInt(document.getElementById('afternoon-periods').value) || 0; const singleWrapper = document.getElementById('single-week-table-wrapper'); singleWrapper.innerHTML = createTableHTML(morningPeriods, afternoonPeriods, 'single'); if (document.getElementById('enable-double-week').checked) handleDoubleWeekToggle(true); }
+    function createSubjectSelect(defaultValue = "") { let html = `<select class="subject-select" onchange="handleSubjectChange(this)">`; let found = false; SUBJECTS.forEach(subject => { const value = typeof subject === 'object' ? subject.value : subject; const text = typeof subject === 'object' ? subject.text : subject; const disabled = typeof subject === 'object' ? subject.disabled : false; const isSelected = (value === defaultValue); if (isSelected) found = true; html += `<option value="${value}" ${isSelected ? 'selected' : ''} ${disabled ? 'disabled' : ''}>${text}</option>`; }); if (!found && defaultValue) html += `<option value="${defaultValue}" selected>${defaultValue} (自定义)</option>`; html += `</select><input type="text" class="custom-subject-input hidden" placeholder="课程名" value="${!found && defaultValue ? defaultValue : ''}">`; return html; }
     function createTableHTML(morning, afternoon, weekType) { const days = ['一', '二', '三', '四', '五', '六', '日']; const defaultTimes = ["0740", "0830", "0920", "1020", "1120", "1430", "1540", "1630"]; let table = '<table class="schedule-table">'; table += `<thead><tr><th class="time-header">时间<div class="help-text">格式HHMM</div></th>`; days.forEach(day => table += `<th>星期${day}</th>`); table += '</tr></thead><tbody>'; let periodIndex = 0; const processRow = () => { let rowHtml = `<tr><td><input type="text" class="time-input" value="${defaultTimes[periodIndex] || ''}"></td>`; days.forEach((day, dayIndex) => { const subject = weekType === 'single' ? (defaultSchedule[`${dayIndex}-${periodIndex}`] || '') : ''; rowHtml += `<td class="subject-cell"><div>${createSubjectSelect(subject)}</div></td>`; }); rowHtml += '</tr>'; periodIndex++; return rowHtml; }; for (let i = 1; i <= morning; i++) table += processRow(); if (morning > 0 && afternoon > 0) table += `<tr class="break-row"><td colspan="${days.length + 1}">午休</td></tr>`; for (let i = 1; i <= afternoon; i++) table += processRow(); table += '</tbody></table>'; return table; }
-    function handleSubjectChange(selectElement) { const customInput = selectElement.nextElementSibling; if (selectElement.value === '_CUSTOM_') { customInput.classList.remove('hidden'); customInput.focus(); } else { customInput.classList.add('hidden'); } }
+    function handleSubjectChange(selectElement) { const customInput = selectElement.nextElementSibling; if (selectElement.value === '_CUSTOM_') customInput.classList.remove('hidden'); else customInput.classList.add('hidden'); }
     function handleDoubleWeekToggle(force = false) { const isEnabled = document.getElementById('enable-double-week').checked; const doubleContainer = document.getElementById('double-week-schedule-container'); if (isEnabled || force) { doubleContainer.classList.remove('hidden'); if (document.getElementById('double-week-table-wrapper').innerHTML.trim() === '') { const morning = parseInt(document.getElementById('morning-periods').value) || 0; const afternoon = parseInt(document.getElementById('afternoon-periods').value) || 0; document.getElementById('double-week-table-wrapper').innerHTML = createTableHTML(morning, afternoon, 'double'); } copyScheduleContent('single', 'double'); } else { doubleContainer.classList.add('hidden'); } }
-    function copyScheduleContent(sourceWeekType, targetWeekType) { const sourceCells = document.querySelectorAll(`#${sourceWeekType}-week-table-wrapper tbody tr`); const targetCells = document.querySelectorAll(`#${targetWeekType}-week-table-wrapper tbody tr`); if (sourceCells.length !== targetCells.length) return; for (let i = 0; i < sourceCells.length; i++) { const sourceRow = sourceCells[i]; const targetRow = targetCells[i]; const sourceTime = sourceRow.querySelector('.time-input'); const targetTime = targetRow.querySelector('.time-input'); if (sourceTime && targetTime) targetTime.value = sourceTime.value; const sourceSelects = sourceRow.querySelectorAll('.subject-select'); const targetSelects = targetRow.querySelectorAll('.subject-select'); if (sourceSelects.length !== targetSelects.length) continue; for (let j = 0; j < sourceSelects.length; j++) { const sourceSelect = sourceSelects[j]; const targetSelect = targetSelects[j]; const sourceValue = sourceSelect.value === '_CUSTOM_' ? sourceSelect.nextElementSibling.value : sourceSelect.value; let targetHasOption = Array.from(targetSelect.options).some(opt => opt.value === sourceValue); if (targetHasOption) { targetSelect.value = sourceValue; handleSubjectChange(targetSelect); } else { targetSelect.value = '_CUSTOM_'; handleSubjectChange(targetSelect); targetSelect.nextElementSibling.value = sourceValue; } } } }
+    function copyScheduleContent(sourceWeekType, targetWeekType) { const sourceRows = document.querySelectorAll(`#${sourceWeekType}-week-table-wrapper tbody tr`); const targetRows = document.querySelectorAll(`#${targetWeekType}-week-table-wrapper tbody tr`); if (sourceRows.length !== targetRows.length) return; for (let i = 0; i < sourceRows.length; i++) { const sourceTime = sourceRows[i].querySelector('.time-input'); const targetTime = targetRows[i].querySelector('.time-input'); if (sourceTime && targetTime) targetTime.value = sourceTime.value; const sourceSelects = sourceRows[i].querySelectorAll('.subject-select'); const targetSelects = targetRows[i].querySelectorAll('.subject-select'); if (sourceSelects.length !== targetSelects.length) continue; for (let j = 0; j < sourceSelects.length; j++) { const sourceSelect = sourceSelects[j]; const targetSelect = targetSelects[j]; const sourceValue = sourceSelect.value === '_CUSTOM_' ? sourceSelect.nextElementSibling.value : sourceSelect.value; let optionExists = Array.from(targetSelect.options).some(opt => opt.value === sourceValue); if (optionExists) { targetSelect.value = sourceValue; } else { targetSelect.value = '_CUSTOM_'; targetSelect.nextElementSibling.value = sourceValue; } handleSubjectChange(targetSelect); } } }
     function addCountdownItem(name = '', date = '') { const container = document.getElementById('countdown-container'); const item = document.createElement('div'); item.className = 'countdown-item'; item.innerHTML = `<input type="text" class="countdown-name" placeholder="事件名称" value="${name}"><input type="date" class="countdown-date" value="${date}"><button type="button" class="remove-btn" onclick="this.parentElement.remove()">移除</button>`; container.appendChild(item); }
-    function parseScheduleTable(weekType) { const wrapper = document.getElementById(`${weekType}-week-table-wrapper`); const rows = wrapper.querySelectorAll('tbody tr'); const dailySchedules = Array.from({ length: 7 }, () => []); rows.forEach(row => { if (row.classList.contains('break-row')) { dailySchedules.forEach(day => day.push('null')); } else { const time = row.querySelector('.time-input').value.trim(); row.querySelectorAll('.subject-cell').forEach((cell, dayIndex) => { const select = cell.querySelector('.subject-select'); let subject = select.value; if (subject === '_CUSTOM_') { subject = cell.querySelector('.custom-subject-input').value.trim(); } if (subject) { dailySchedules[dayIndex].push(`[${time}, "${subject}"]`); } }); } }); const finalOrder = [dailySchedules[6], dailySchedules[0], dailySchedules[1], dailySchedules[2], dailySchedules[3], dailySchedules[4], dailySchedules[5]]; return finalOrder.map(day => { let finalDay = [], inBreak = false; day.forEach(item => { if (item === 'null') { if (!inBreak) finalDay.push(item); inBreak = true; } else { finalDay.push(item); inBreak = false; } }); if (finalDay.every(item => item === 'null' || !item)) return '[]'; return `[${finalDay.join(',\n            ')}]`; }).join(',\n        '); }
+    function parseScheduleTable(weekType) { const wrapper = document.getElementById(`${weekType}-week-table-wrapper`); const rows = wrapper.querySelectorAll('tbody tr'); const dailySchedules = Array.from({ length: 7 }, () => []); rows.forEach(row => { if (row.classList.contains('break-row')) { dailySchedules.forEach(day => day.push('null')); } else { const time = row.querySelector('.time-input').value.trim(); row.querySelectorAll('.subject-cell').forEach((cell, dayIndex) => { const select = cell.querySelector('.subject-select'); let subject = select.value === '_CUSTOM_' ? cell.querySelector('.custom-subject-input').value.trim() : select.value; if (subject) dailySchedules[dayIndex].push(`[${time}, "${subject}"]`); }); } }); const finalOrder = [dailySchedules[6], dailySchedules[0], dailySchedules[1], dailySchedules[2], dailySchedules[3], dailySchedules[4], dailySchedules[5]]; return finalOrder.map(day => { let finalDay = [], inBreak = false; day.forEach(item => { if (item === 'null') { if (!inBreak) finalDay.push(item); inBreak = true; } else { finalDay.push(item); inBreak = false; } }); if (finalDay.every(item => item === 'null' || !item)) return '[]'; return `[${finalDay.join(',\n            ')}]`; }).join(',\n        '); }
     function copyToClipboard() { const output = document.getElementById('output-code'); output.select(); document.execCommand('copy'); alert('代码已复制到剪贴板！'); }
-    
-    // --- 生成和保存 ---
-    function generateAndSaveConfig() {
-        saveSettings();
-        generateConfig();
-    }
-    
-    function generateConfig() {
-        const getStr = id => JSON.stringify(document.getElementById(id).value); const getNum = id => document.getElementById(id).value || 0; const getBool = id => document.getElementById(id).checked;
-        const announcementList = document.getElementById('announcementList').value.split('\n').filter(line => line.trim()).map(line => JSON.stringify(line.trim())).join(',\n    ');
-        const countdownList = Array.from(document.querySelectorAll('.countdown-item')).map(item => { const name = item.querySelector('.countdown-name').value; const date = item.querySelector('.countdown-date').value; return (name && date) ? `["${name}", "${date.replace(/-/g, '/')}"]` : `[]` }).join(',\n    ');
-        const dutySingle = `[${getStr('dutySingleSatSun')}, ${getStr('dutySingleMon')}, ${getStr('dutySingleTue')}, ${getStr('dutySingleWed')}, ${getStr('dutySingleThu')}, ${getStr('dutySingleFri')}, ${getStr('dutySingleSatSun')}]`;
-        const dutyDouble = `[${getStr('dutyDoubleSatSun')}, ${getStr('dutyDoubleMon')}, ${getStr('dutyDoubleTue')}, ${getStr('dutyDoubleWed')}, ${getStr('dutyDoubleThu')}, ${getStr('dutyDoubleFri')}, ${getStr('dutyDoubleSatSun')}]`;
-        const subjectListConsistent = !getBool('enable-double-week'); const singleWeekData = parseScheduleTable('single'); const doubleWeekData = subjectListConsistent ? singleWeekData : parseScheduleTable('double');
-        const template = `// ... (此处为生成config.js内容的模板字符串，与上一版相同，为简洁省略) ...`;
-        document.getElementById('output-code').value = `// Generated on ${new Date().toLocaleString()}\nvar revWeek = ${getBool('revWeek')};\nvar temporaryDayOfWeek = ${document.getElementById('temporaryDayOfWeek').value};\nvar announcementList = [${announcementList}];\nvar announcementRandomOrder = ${getBool('announcementRandomOrder')};\nvar countdownList = [${countdownList}];\nvar countdownShowPastDate = ${getBool('countdownShowPastDate')};\nvar countdownAnimation = ${getBool('countdownAnimation')};\nvar dutyListConsistent = ${getBool('dutyListConsistent')};\nvar dutyList = [${dutySingle}, ${dutyDouble}];\nvar emojiEnabled = ${getBool('emojiEnabled')};\nvar emojiFilename = [];\nvar subjectListConsistent = ${subjectListConsistent};\nvar subjectList = [[${singleWeekData}],[${doubleWeekData}]];\nvar defaultClassDuration = 40;\nvar promptAfterSchool = "请今日值日生做好值日工作";\nvar promptEmptySchedule = "今日无课";\nvar showTimeSeconds = ${getBool('showTimeSeconds')};\nvar updateInterval = 500;\nvar promptUpdateDelay = 2;`;
-        document.getElementById('output-container').classList.remove('hidden'); window.scrollTo(0, document.body.scrollHeight); alert('配置已生成！');
-    }
-
-    // --- 页面加载 ---
-    function initDefaults() {
-        console.log('Initializing with default values.');
-        generateScheduleTables();
-        addCountdownItem('高考', '2026-06-07');
-        addCountdownItem('惠一调', '2025-07-03');
-        document.getElementById('duty-double-week-panel').style.display = 'none';
-        // 设置默认值
-        document.getElementById('revWeek').checked = true;
-        document.getElementById('announcementRandomOrder').checked = true;
-        document.getElementById('dutyListConsistent').checked = true;
-        document.getElementById('showTimeSeconds').checked = true;
-        document.getElementById('emojiEnabled').checked = true;
-    }
-
+    function generateAndSaveConfig() { saveSettings(); generateConfig(); }
+    function generateConfig() { const getStr = id => JSON.stringify(document.getElementById(id).value); const getBool = id => document.getElementById(id).checked; const announcementList = document.getElementById('announcementList').value.split('\n').filter(line => line.trim()).map(line => JSON.stringify(line.trim())).join(',\n    '); const countdownList = Array.from(document.querySelectorAll('.countdown-item')).map(item => { const name = item.querySelector('.countdown-name').value; const date = item.querySelector('.countdown-date').value; return (name && date) ? `["${name}", "${date.replace(/-/g, '/')}"]` : `[]` }).join(',\n    '); const dutySingle = `[${getStr('dutySingleSatSun')}, ${getStr('dutySingleMon')}, ${getStr('dutySingleTue')}, ${getStr('dutySingleWed')}, ${getStr('dutySingleThu')}, ${getStr('dutySingleFri')}, ${getStr('dutySingleSatSun')}]`; const dutyDouble = `[${getStr('dutyDoubleSatSun')}, ${getStr('dutyDoubleMon')}, ${getStr('dutyDoubleTue')}, ${getStr('dutyDoubleWed')}, ${getStr('dutyDoubleThu')}, ${getStr('dutyDoubleFri')}, ${getStr('dutyDoubleSatSun')}]`; const subjectListConsistent = !getBool('enable-double-week'); const singleWeekData = parseScheduleTable('single'); const doubleWeekData = subjectListConsistent ? singleWeekData : parseScheduleTable('double'); const template = `var revWeek = ${getBool('revWeek')};\nvar temporaryDayOfWeek = ${document.getElementById('temporaryDayOfWeek').value};\nvar announcementList = [${announcementList}];\nvar announcementRandomOrder = ${getBool('announcementRandomOrder')};\nvar countdownList = [${countdownList}];\nvar countdownShowPastDate = ${getBool('countdownShowPastDate')};\nvar countdownAnimation = ${getBool('countdownAnimation')};\nvar dutyListConsistent = ${getBool('dutyListConsistent')};\nvar dutyList = [${dutySingle}, ${dutyDouble}];\nvar emojiEnabled = ${getBool('emojiEnabled')};\nvar emojiFilename = [];\nvar subjectListConsistent = ${subjectListConsistent};\nvar subjectList = [[${singleWeekData}],[${doubleWeekData}]];\nvar defaultClassDuration = 40;\nvar promptAfterSchool = "请今日值日生做好值日工作";\nvar promptEmptySchedule = "今日无课";\nvar showTimeSeconds = ${getBool('showTimeSeconds')};\nvar updateInterval = 500;\nvar promptUpdateDelay = 2;`; document.getElementById('output-code').value = template; document.getElementById('output-container').classList.remove('hidden'); window.scrollTo(0, document.body.scrollHeight); alert('配置已生成！'); }
+    function initDefaults() { console.log('Initializing with default values.'); generateScheduleTables(); addCountdownItem('高考', '2026-06-07'); addCountdownItem('惠一调', '2025-07-03'); document.getElementById('duty-double-week-panel').style.display = 'none'; document.getElementById('revWeek').checked = true; document.getElementById('announcementRandomOrder').checked = true; document.getElementById('dutyListConsistent').checked = true; document.getElementById('showTimeSeconds').checked = true; document.getElementById('emojiEnabled').checked = true; }
     window.onload = loadSettings;
 </script>
 </body>
